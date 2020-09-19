@@ -1,64 +1,24 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"os"
-	"os/exec"
-	"syscall"
 
 	"github.com/urfave/cli/v2"
+	"github.com/wilhelmguo/gocker/runc"
 )
 
 func main() {
-	cmd := cli.NewApp()
-	cmd.Name = "gocker"
-	cmd.Usage = "gocker 是一个精简版的启动容器实现"
+	app := cli.NewApp()
+	app.Name = "gocker"
+	app.Usage = "gocker 是 golang 编写的精简版 Docker，目的是学习 Docker 的运行原理。"
 
-	cmd.Commands = []*cli.Command{
-		runCommand,
+	app.Commands = []*cli.Command{
+		runc.InitCommand,
+		runc.RunCommand,
 	}
 
-	if err := cmd.Run(os.Args); err != nil {
+	if err := app.Run(os.Args); err != nil {
 		log.Fatal(err)
 	}
-}
-
-var runCommand = &cli.Command{
-	Name:  "run",
-	Usage: `使用交互命令创建一个容器：gocker run -it [command]`,
-	Flags: []cli.Flag{
-		&cli.BoolFlag{
-			Name:  "it",
-			Usage: "启用交互命令",
-		},
-	},
-	Action: func(context *cli.Context) error {
-		if context.Args().Len() < 1 {
-			return fmt.Errorf("缺少容器参数！")
-		}
-		cmd := context.Args().Get(0)
-		tty := context.Bool("ti")
-		Run(tty, cmd)
-		return nil
-	},
-}
-
-func Run(tty bool, command string) {
-	args := []string{"init", command}
-	cmd := exec.Command("/proc/self/exe", args...)
-	cmd.SysProcAttr = &syscall.SysProcAttr{
-		Cloneflags: syscall.CLONE_NEWUTS | syscall.CLONE_NEWPID | syscall.CLONE_NEWNS |
-			syscall.CLONE_NEWNET | syscall.CLONE_NEWIPC,
-	}
-	if tty {
-		cmd.Stdin = os.Stdin
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
-	}
-	if err := cmd.Start(); err != nil {
-		log.Println("Start commamd error.", err)
-	}
-	cmd.Wait()
-	os.Exit(-1)
 }
