@@ -23,13 +23,13 @@ func NewCgroups() *Cgroups {
 }
 
 func (c *Cgroups) Apply(pid int) error {
-	if CPU != 0 {
+	if c.CPU != 0 {
 		err := ioutil.WriteFile(path.Join(cpuPath, "tasks"), []byte(strconv.Itoa(pid)), 0644)
 		if err != nil {
 			return fmt.Errorf("set cgroup cpu fail %v", err)
 		}
 	}
-	if Memory != 0 {
+	if c.Memory != 0 {
 		err := ioutil.WriteFile(path.Join(memoryPath, "tasks"), []byte(strconv.Itoa(pid)), 0644)
 		if err != nil {
 			return fmt.Errorf("set cgroup memory fail %v", err)
@@ -40,10 +40,10 @@ func (c *Cgroups) Apply(pid int) error {
 
 // 释放cgroup
 func (c *Cgroups) Destroy() error {
-	if CPU != 0 {
+	if c.CPU != 0 {
 		return os.RemoveAll(cpuPath)
 	}
-	if Memory != 0 {
+	if c.Memory != 0 {
 		return os.RemoveAll(memoryPath)
 	}
 	return nil
