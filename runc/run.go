@@ -12,6 +12,7 @@ import (
 	"syscall"
 
 	"github.com/urfave/cli/v2"
+	"github.com/wilhelmguo/gocker/cgroups"
 )
 
 var RunCommand = &cli.Command{
@@ -26,6 +27,14 @@ var RunCommand = &cli.Command{
 		&cli.StringFlag{
 			Name:  "rootfs",
 			Usage: "容器根目录",
+		},
+		&cli.IntFlag{
+			Name:  "cpus",
+			Usage: "CPU 限制，单位核",
+		},
+		&cli.IntFlag{
+			Name:  "m",
+			Usage: "内存限制，单位兆",
 		},
 	},
 	Action: func(context *cli.Context) error {
@@ -63,6 +72,19 @@ var RunCommand = &cli.Command{
 		}
 		write.WriteString(strings.Join(context.Args().Slice(), " "))
 		write.Close()
+
+		// use gocker as cgroup name
+		cgroup := cgroups.NewCgroups()
+		defer cgroup.Destroy()
+		cpus := context.Int("cpus")
+		if cpus != 0 {
+			cgroup.SetCPULimit(cpus)
+		}
+		m := context.Int("m")
+		if m != 0 {
+			cgroup.SetCPULimit(m)
+		}
+		cgroup.Apply(cmd.Process.Pid)
 
 		cmd.Wait()
 		return nil
