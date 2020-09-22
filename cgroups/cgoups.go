@@ -8,8 +8,8 @@ import (
 	"strconv"
 )
 
-const cpuPath = "/sys/fs/cgroup/cpu/gocker"
-const memoryPath = "/sys/fs/cgroup/memory/gocker"
+const gockerCgroupPath = "gocker"
+const cgroupsRoot = "/sys/fs/cgroup"
 
 type Cgroups struct {
 	// 单位 核
@@ -24,13 +24,21 @@ func NewCgroups() *Cgroups {
 
 func (c *Cgroups) Apply(pid int) error {
 	if c.CPU != 0 {
-		err := ioutil.WriteFile(path.Join(cpuPath, "tasks"), []byte(strconv.Itoa(pid)), 0644)
+		cpuCgroupPath, err := getCgroupPath("cpu", true)
+		if err != nil {
+			return err
+		}
+		err = ioutil.WriteFile(path.Join(cpuCgroupPath, "tasks"), []byte(strconv.Itoa(pid)), 0644)
 		if err != nil {
 			return fmt.Errorf("set cgroup cpu fail %v", err)
 		}
 	}
 	if c.Memory != 0 {
-		err := ioutil.WriteFile(path.Join(memoryPath, "tasks"), []byte(strconv.Itoa(pid)), 0644)
+		memoryCgroupPath, err := getCgroupPath("memory", true)
+		if err != nil {
+			return err
+		}
+		err = ioutil.WriteFile(path.Join(memoryCgroupPath, "tasks"), []byte(strconv.Itoa(pid)), 0644)
 		if err != nil {
 			return fmt.Errorf("set cgroup memory fail %v", err)
 		}
@@ -41,23 +49,39 @@ func (c *Cgroups) Apply(pid int) error {
 // 释放cgroup
 func (c *Cgroups) Destroy() error {
 	if c.CPU != 0 {
-		return os.RemoveAll(cpuPath)
+		cpuCgroupPath, err := getCgroupPath("cpu", false)
+		if err != nil {
+			return err
+		}
+		return os.RemoveAll(cpuCgroupPath)
 	}
 	if c.Memory != 0 {
-		return os.RemoveAll(memoryPath)
+		memoryCgroupPath, err := getCgroupPath("memory", false)
+		if err != nil {
+			return err
+		}
+		return os.RemoveAll(memoryCgroupPath)
 	}
 	return nil
 }
 
 func (c *Cgroups) SetCPULimit(cpu int) error {
-	if err := ioutil.WriteFile(path.Join(cpuPath, "cpu.cfs_quota_us"), []byte(strconv.Itoa(cpu*100000)), 0644); err != nil {
+	cpuCgroupPath, err := getCgroupPath("cpu", true)
+	if err != nil {
+		return err
+	}
+	if err := ioutil.WriteFile(path.Join(cpuCgroupPath, "cpu.cfs_quota_us"), []byte(strconv.Itoa(cpu*100000)), 0644); err != nil {
 		return fmt.Errorf("set cpu limit fail %v", err)
 	}
 	return nil
 }
 
 func (c *Cgroups) SetMemoryLimit(memory int) error {
-	if err := ioutil.WriteFile(path.Join(cpuPath, "memory.limit_in_bytes"), []byte(strconv.Itoa(memory*1024*1024)), 0644); err != nil {
+	memoryCgroupPath, err := getCgroupPath("memory", true)
+	if err != nil {
+		return err
+	}
+	if err := ioutil.WriteFile(path.Join(memoryCgroupPath, "memory.limit_in_bytes"), []byte(strconv.Itoa(memory*1024*1024)), 0644); err != nil {
 		return fmt.Errorf("set memory limit fail %v", err)
 	}
 	return nil

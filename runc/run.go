@@ -82,7 +82,7 @@ var RunCommand = &cli.Command{
 		}
 		m := context.Int("m")
 		if m != 0 {
-			cgroup.SetCPULimit(m)
+			cgroup.SetMemoryLimit(m)
 		}
 		cgroup.Apply(cmd.Process.Pid)
 
