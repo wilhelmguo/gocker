@@ -78,10 +78,12 @@ var RunCommand = &cli.Command{
 		defer cgroup.Destroy()
 		cpus := context.Int("cpus")
 		if cpus != 0 {
+			cgroup.CPU = cpus
 			cgroup.SetCPULimit(cpus)
 		}
 		m := context.Int("m")
 		if m != 0 {
+			cgroup.Memory = m
 			cgroup.SetMemoryLimit(m)
 		}
 		cgroup.Apply(cmd.Process.Pid)
